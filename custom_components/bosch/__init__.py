@@ -115,6 +115,7 @@ SUPPORTED_PLATFORMS = {
     SENSOR: [SENSOR, BINARY_SENSOR],
     ZN: [CLIMATE],
     DV: [SENSOR],
+    RECORDING: [SENSOR],
 }
 
 
@@ -235,16 +236,20 @@ class BoschGatewayEntry:
 
         _LOGGER.debug("Initializing Bosch integration.")
         self._update_lock = asyncio.Lock()
-        BoschGateway = bosch.gateway_chooser(device_type=self._device_type)
-        self.gateway = BoschGateway(
-            session=async_get_clientsession(self.hass, verify_ssl=False)
-            if self._protocol == HTTP
-            else None,
-            session_type=self._protocol,
-            host=self._host,
-            access_key=self._access_key,
-            access_token=self._access_token,
-        )
+        if self._access_token == "demo":
+            from .mock_gateway import MockBoschGateway
+            self.gateway = MockBoschGateway(host=self._host)
+        else:
+            BoschGateway = bosch.gateway_chooser(device_type=self._device_type)
+            self.gateway = BoschGateway(
+                session=async_get_clientsession(self.hass, verify_ssl=False)
+                if self._protocol == HTTP
+                else None,
+                session_type=self._protocol,
+                host=self._host,
+                access_key=self._access_key,
+                access_token=self._access_token,
+            )
 
         async def close_connection(event) -> None:
             """Close connection with server."""
@@ -256,10 +261,6 @@ class BoschGatewayEntry:
             async_dispatcher_connect(
                 self.hass, SIGNAL_BOSCH, self.async_get_signals
             )
-            await self.hass.config_entries.async_forward_entry_setups(
-                self.config_entry,
-                [component for component in self.supported_platforms if component != SOLAR]
-            )
             device_registry = dr.async_get(self.hass)
             device_registry.async_get_or_create(
                 config_entry_id=self.config_entry.entry_id,
@@ -268,6 +269,10 @@ class BoschGatewayEntry:
                 model=self.gateway.device_type,
                 name=self.gateway.device_name,
                 sw_version=self.gateway.firmware,
+            )
+            await self.hass.config_entries.async_forward_entry_setups(
+                self.config_entry,
+                [component for component in self.supported_platforms if component != SOLAR]
             )
             if GATEWAY in self.hass.data[DOMAIN][self.uuid]:
                 _LOGGER.debug("Registering debug services.")
@@ -293,9 +298,9 @@ class BoschGatewayEntry:
             self.hass.data[DOMAIN][self.uuid][FW_INTERVAL] = async_track_time_interval(
                 self.hass,
                 self.firmware_refresh,
-                FIRMWARE_SCAN_INTERVAL,  # SCAN INTERVAL FV
+                FIRMWARE_SCAN_INTERVAL,  # Firmware scan interval
             )
-            async_call_later(self.hass, 5, self.thermostat_refresh)
+            async_call_later(self.hass, 1, self.thermostat_refresh)
             asyncio.run_coroutine_threadsafe(self.recording_sensors_update(),
                 self.hass.loop
             )
@@ -493,7 +498,7 @@ class BoschGatewayEntry:
 
     async def async_reset(self) -> bool:
         """Reset this device to default state."""
-        _LOGGER.warning("Unloading Bosch module.")
+        _LOGGER.debug("Unloading Bosch module.")
         _LOGGER.debug("Closing connection to gateway.")
         tasks: list[Awaitable] = [
             self.hass.config_entries.async_forward_entry_unload(

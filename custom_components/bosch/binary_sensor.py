@@ -109,3 +109,8 @@ class BoschBinarySensor(BoschEntity, BinarySensorEntity):
         if self._update_init:
             self._update_init = False
             self.async_schedule_update_ha_state()
+
+    @property
+    def should_poll(self):
+        """Don't poll."""
+        return False

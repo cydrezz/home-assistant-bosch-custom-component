@@ -8,6 +8,7 @@ from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
     HVACAction,
     ClimateEntityFeature,
+    HVACMode,
 )
 from homeassistant.const import ATTR_TEMPERATURE
 from homeassistant.helpers.dispatcher import async_dispatcher_send
@@ -69,18 +70,22 @@ class BoschThermostat(BoschClimateWaterEntity, ClimateEntity):
         super().__init__(
             hass=hass, uuid=uuid, bosch_object=bosch_object, gateway=gateway
         )
+        self._hvac_modes = bosch_object.ha_modes
+        self._hvac_mode = bosch_object.ha_mode
+        self._target_temperature = bosch_object.target_temperature
+        self._current_temperature = bosch_object.current_temp
 
     @property
-    def state_attributes(self) -> dict[str, Any]:
-        """Attributes of entity."""
-        data = super().state_attributes
+    def extra_state_attributes(self) -> dict[str, Any]:
+        """Extra attributes of entity."""
+        data = {}
         try:
             data[SETPOINT] = self._bosch_object.setpoint
             if self._bosch_object.schedule:
                 data[SWITCHPOINT] = self._bosch_object.schedule.active_program
             data[BOSCH_STATE] = self._state
             if self._bosch_object.extra_state_attributes:
-                data = {**data, **self._bosch_object.extra_state_attributes}
+                data.update(self._bosch_object.extra_state_attributes)
         except NotImplementedError:
             pass
         return data
@@ -88,11 +93,15 @@ class BoschThermostat(BoschClimateWaterEntity, ClimateEntity):
     @property
     def supported_features(self):
         """Return the list of supported features."""
-        return ClimateEntityFeature.TARGET_TEMPERATURE | (
+        features = ClimateEntityFeature.TARGET_TEMPERATURE | (
             ClimateEntityFeature.PRESET_MODE
             if self._bosch_object.support_presets
             else 0
         )
+        if HVACMode.OFF in self.hvac_modes:
+            features |= ClimateEntityFeature.TURN_OFF
+            features |= ClimateEntityFeature.TURN_ON
+        return features
 
     async def async_set_hvac_mode(self, hvac_mode):
         """Set operation mode."""
@@ -158,7 +167,7 @@ class BoschThermostat(BoschClimateWaterEntity, ClimateEntity):
         _LOGGER.debug("Update of climate %s component called.", self._name)
         if not self._bosch_object or not self._bosch_object.update_initialized:
             return
-        self._temperature_units = UNITS_CONVERTER.get(self._bosch_object.temp_units)
+        self._temperature_unit = UNITS_CONVERTER.get(self._bosch_object.temp_units)
         if (
             self._state != self._bosch_object.state
             or self._target_temperature != self._bosch_object.target_temperature
@@ -172,3 +181,8 @@ class BoschThermostat(BoschClimateWaterEntity, ClimateEntity):
             self._hvac_modes = self._bosch_object.ha_modes
             self._hvac_mode = self._bosch_object.ha_mode
             self.async_schedule_update_ha_state()
+
+    @property
+    def should_poll(self):
+        """Don't poll."""
+        return False

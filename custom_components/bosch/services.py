@@ -110,7 +110,7 @@ def async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
         await _gateway_entry.recording_sensors_update()
 
     async def async_handle_recording_sensor_fetch_past(service_call: ServiceCall):
-        """Request update of recording sensor manually."""
+        """Fetch past recording sensor data manually."""
         statistic_id = service_call.data.get("statistic_id")
         day = dt_util.start_of_local_day(service_call.data.get("day"))
         _gateway_entries = find_gateway_entry(hass=hass, devices_id=service_call.data[ATTR_DEVICE_ID])
@@ -124,7 +124,7 @@ def async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
                     await entity.insert_statistics_range(start_time=day)
 
     async def async_handle_get(service_call: ServiceCall) -> ServiceResponse:
-        """Request update of recording sensor manually."""
+        """Get value from gateway manually."""
         _gateway_entries = find_gateway_entry(hass=hass, devices_id=service_call.data[ATTR_DEVICE_ID])
         if not _gateway_entries:
             data = ""
@@ -142,7 +142,7 @@ def async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
         }
 
     async def async_handle_put(service_call: ServiceCall) -> ServiceResponse:
-        """Request update of recording sensor manually."""
+        """Put value to gateway manually."""
         _gateway_entries = find_gateway_entry(hass=hass, devices_id=service_call.data[ATTR_DEVICE_ID])
         if not _gateway_entries:
             return

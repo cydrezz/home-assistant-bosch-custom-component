@@ -69,6 +69,10 @@ class BoschWaterHeater(BoschClimateWaterEntity, WaterHeaterEntity):
         super().__init__(
             hass=hass, uuid=uuid, bosch_object=bosch_object, gateway=gateway
         )
+        self._operation_list = bosch_object.ha_modes
+        self._mode = bosch_object.ha_mode
+        self._target_temperature = bosch_object.target_temperature
+        self._current_temperature = bosch_object.current_temp
 
     async def service_charge(self, value) -> None:
         """Set charge of DHW device.
@@ -157,3 +161,8 @@ class BoschWaterHeater(BoschClimateWaterEntity, WaterHeaterEntity):
             self._operation_list = self._bosch_object.ha_modes
             self._mode = self._bosch_object.ha_mode
             self.async_schedule_update_ha_state()
+
+    @property
+    def should_poll(self):
+        """Don't poll."""
+        return False

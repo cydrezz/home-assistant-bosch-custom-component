@@ -81,35 +81,43 @@ class StatisticHelper(BoschBaseSensor):
         )
 
     async def get_last_stat(self) -> dict[str, list[StatisticsRow]]:
-        return await get_instance(self.hass).async_add_executor_job(
-            get_last_statistics,
-            self.hass,
-            1,
-            self.statistic_id,
-            True,
-            {"state", "sum"},
-        )
+        try:
+            return await get_instance(self.hass).async_add_executor_job(
+                get_last_statistics,
+                self.hass,
+                1,
+                self.statistic_id,
+                True,
+                {"state", "sum"},
+            )
+        except Exception as err:
+            _LOGGER.debug("Can't fetch last stats: %s", err)
+            return {}
 
     async def get_stats_from_ha_db(
         self, start_time: datetime, end_time: datetime
     ) -> dict[str, list[StatisticsRow]]:
         """Get stats during period."""
-        return await get_instance(self.hass).async_add_executor_job(
-            statistics_during_period,
-            self.hass,
-            start_time,
-            end_time,
-            [self.statistic_id],
-            "hour",
-            None,
-            {"state", "sum"},
-        )
+        try:
+            return await get_instance(self.hass).async_add_executor_job(
+                statistics_during_period,
+                self.hass,
+                start_time,
+                end_time,
+                [self.statistic_id],
+                "hour",
+                None,
+                {"state", "sum"},
+            )
+        except Exception as err:
+            _LOGGER.debug("Can't fetch stats from DB: %s", err)
+            return {}
 
     def add_external_stats(self, stats: list[StatisticData]) -> None:
         """Add external statistics."""
-        self._state = -17
         if not stats:
             return
+        self._state = stats[-1]["state"]
         async_add_external_statistics(self.hass, self.statistic_metadata, stats)
         self.async_schedule_update_ha_state()
 

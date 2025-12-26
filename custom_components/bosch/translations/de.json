@@ -43,10 +43,10 @@
   "options": {
     "step": {
       "init": {
-        "title": "Bosch options",
+        "title": "Bosch Optionen",
         "data": {
-          "new_stats_api": "Use new statistic API",
-          "optimistic_mode": "Use optimistic mode for some functions (currently CT200 Operation mode set)."
+          "new_stats_api": "Neue Statistik-API verwenden",
+          "optimistic_mode": "Optimistischen Modus verwenden (aktuell für CT200 Betriebsart)."
         }
       }
     }

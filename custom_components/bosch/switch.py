@@ -27,6 +27,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
     """Set up the Bosch Switch from a config entry."""
     uuid = config_entry.data[UUID]
     data = hass.data[DOMAIN][uuid]
+    data[SWITCH] = []
     enabled_switches = config_entry.data.get(SWITCH, [])
     data_switch = []
     for switch in data[GATEWAY].regular_switches:

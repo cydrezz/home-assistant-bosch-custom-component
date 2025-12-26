@@ -44,10 +44,17 @@ class RecordingSensor(StatisticHelper):
         self._attr_device_class = self._bosch_object.device_class
         self._attr_state_class = self._bosch_object.state_class
 
-        self._attr_last_reset = last_reset
+        if (
+            self._attr_device_class == "temperature"
+            and self._attr_state_class == "total"
+        ):
+            self._attr_state_class = "measurement"
+
+        if self._attr_state_class == "total":
+            self._attr_last_reset = last_reset
         if self._update_init:
             self._update_init = False
-            self.async_schedule_update_ha_state()
+        self.async_schedule_update_ha_state()
 
     async def async_old_gather_update(self) -> None:
         """Old async update."""
@@ -95,10 +102,10 @@ class RecordingSensor(StatisticHelper):
         now = dt_util.now()
         diff = now - start
         if now.day == start.day:
-            _LOGGER.warn("Can't upsert today date. Try again tomorrow.")
+            _LOGGER.warning("Can't upsert today date. Try again tomorrow.")
             return
         if diff > timedelta(days=60):
-            _LOGGER.warn(
+            _LOGGER.warning(
                 "Update more than 60 days might take some time! Component will try to do that anyway!"
             )
         stats = await self.fetch_past_data(
@@ -202,12 +209,20 @@ class RecordingSensor(StatisticHelper):
                 start_time=start_time, stop_time=now
             )
             if not all_stats:
-                _LOGGER.warn("Stats not found.")
+                _LOGGER.debug("30 days stats not found. Trying 1 day.")
+                start_time = now - timedelta(days=1)
+                all_stats = await self.fetch_past_data(
+                    start_time=start_time, stop_time=now
+                )
+            if not all_stats:
+                _LOGGER.debug("Stats not found.")
                 return
             all_stats = list(all_stats.values())
             self.append_statistics(stats=all_stats, sum=_sum, now=now)
             return
 
+        self._state = last_stat[self.statistic_id][0].get("state")
+        self.async_schedule_update_ha_state()
         start_of_day = dt_util.start_of_local_day()
         last_stat_row = last_stat[self.statistic_id][0]
         last_stat_start = timestamp_to_datetime_or_none(
@@ -224,6 +239,9 @@ class RecordingSensor(StatisticHelper):
             )
 
         last_stats = await get_last_stats_in_ha()
+
+        if not last_stats:
+            last_stats = last_stat
 
         all_stats = []
 

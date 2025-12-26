@@ -1,6 +1,6 @@
 {
   "domain": "bosch",
-  "name": "Bosch thermostat",
+  "name": "Bosch thermostat local",
   "documentation": "https://github.com/bosch-thermostat/home-assistant-bosch-custom-component",
   "issue_tracker": "https://github.com/bosch-thermostat/home-assistant-bosch-custom-component/issues",
   "dependencies": ["network", "persistent_notification"],

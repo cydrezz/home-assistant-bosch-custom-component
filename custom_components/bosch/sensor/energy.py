@@ -93,7 +93,7 @@ class EnergySensor(StatisticHelper):
             self._attr_state_class
             and self._attr_device_class == SensorDeviceClass.TEMPERATURE
         ):
-            self._attr_device_class = SensorStateClass.MEASUREMENT
+            self._attr_state_class = SensorStateClass.MEASUREMENT
 
     @property
     def device_name(self) -> str:
@@ -133,7 +133,7 @@ class EnergySensor(StatisticHelper):
                 self._state = value.get(self._attr_read_key)
         if self._update_init:
             self._update_init = False
-            self.async_schedule_update_ha_state()
+        self.async_schedule_update_ha_state()
 
     @property
     def statistic_id(self) -> str:
@@ -178,10 +178,10 @@ class EnergySensor(StatisticHelper):
         now = dt_util.now()
         diff = now - start
         if now.day == start.day:
-            _LOGGER.warn("Can't upsert today date. Try again tomorrow.")
+            _LOGGER.warning("Can't upsert today date. Try again tomorrow.")
             return
         if diff > timedelta(days=60):
-            _LOGGER.warn(
+            _LOGGER.warning(
                 "Update more than 60 days in past might take some time! Component will try to do that anyway!"
             )
         start_time = dt_util.start_of_local_day(start)
@@ -241,11 +241,13 @@ class EnergySensor(StatisticHelper):
             _LOGGER.debug("Last stats not exist. Trying to fetch ALL data.")
             all_stats = list((await self._bosch_object.fetch_all()).values())
             if not all_stats:
-                _LOGGER.warn("Stats not found.")
+                _LOGGER.debug("Stats not found.")
                 return
             self.append_statistics(stats=all_stats, sum=_sum)
             return
 
+        self._state = last_stat[self.statistic_id][0].get("state")
+        self.async_schedule_update_ha_state()
         now = dt_util.now()
         start_of_yesterday = now.replace(
             hour=0, minute=0, second=0, microsecond=0
@@ -268,6 +270,9 @@ class EnergySensor(StatisticHelper):
                 end_time=yesterday - timedelta(hours=1),
             )
         )
+
+        if not last_stats:
+            last_stats = last_stat
 
         async def get_last_stats_from_bosch_api():
             last_stats_row = self.get_last_stats_before_date(

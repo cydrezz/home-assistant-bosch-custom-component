@@ -1,12 +1,14 @@
 """Base sensor component."""
 
 import logging
+from datetime import timedelta
 
 from bosch_thermostat_client.const import NAME, UNITS, VALUE
 from bosch_thermostat_client.const.ivt import INVALID
 from bosch_thermostat_client.sensors.sensor import Sensor as BoschSensor
-from homeassistant.const import EntityCategory
-from homeassistant.components.sensor import SensorEntity
+from homeassistant.const import EntityCategory, UnitOfTime
+from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
+from homeassistant.util import dt as dt_util
 
 from ..bosch_entity import BoschEntity
 from ..const import UNITS_CONVERTER
@@ -48,10 +50,19 @@ class BoschBaseSensor(BoschEntity, SensorEntity):
         else:
             self._name = f"{self._bosch_object.parent_id} {name}"
         self._attr_uri = attr_uri
+        self._attr_device_class = None
+        self._attr_state_class = None
         if self._bosch_object.device_class:
             self._attr_device_class = self._bosch_object.device_class
         if self._bosch_object.state_class:
             self._attr_state_class = self._bosch_object.state_class
+            if (
+                self._attr_device_class == "temperature"
+                and self._attr_state_class == "total"
+            ):
+                self._attr_state_class = "measurement"
+        if attr_uri in ("startTime", "startDateTime"):
+            self._attr_device_class = SensorDeviceClass.TIMESTAMP
         self._attr_entity_category = entity_categories.get(
             self._bosch_object.entity_category, None
         )
@@ -73,6 +84,8 @@ class BoschBaseSensor(BoschEntity, SensorEntity):
     @property
     def native_value(self):
         """Return the state of the sensor."""
+        if self._state == "unavailable":
+            return None
         return self._state
 
     @property
@@ -108,6 +121,25 @@ class BoschBaseSensor(BoschEntity, SensorEntity):
                 self._state = None
             else:
                 self._state = _state
+                if self._attr_uri == "energyConsumption":
+                    # Device reports in kJ, convert to kWh (1 kWh = 3600 kJ)
+                    self._state = round(float(self._state) / 3600, 2)
+                if self._attr_uri in ("systemUptime", "totalSystem"):
+                    try:
+                        self._state = str(timedelta(seconds=int(self._state)))
+                        units = None
+                    except (ValueError, TypeError):
+                        pass
+                if self._attr_uri in ("startTime", "startDateTime"):
+                    units = None
+                    if isinstance(self._state, str):
+                        dt_obj = dt_util.parse_datetime(self._state)
+                        if dt_obj:
+                            if dt_obj.tzinfo is None:
+                                dt_obj = dt_obj.replace(tzinfo=dt_util.now().tzinfo)
+                            self._state = dt_obj
+                        else:
+                            self._state = None
             check_name()
 
         self._attrs = {}
@@ -136,4 +168,9 @@ class BoschBaseSensor(BoschEntity, SensorEntity):
             self._unit_of_measurement = units
         if self._update_init:
             self._update_init = False
-            self.async_schedule_update_ha_state()
+        self.async_schedule_update_ha_state()
+
+    @property
+    def should_poll(self):
+        """Don't poll."""
+        return False

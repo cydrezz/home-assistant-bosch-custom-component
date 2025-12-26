@@ -15,6 +15,7 @@ from bosch_thermostat_client.exceptions import (
 )
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import AbortFlow
 
 from homeassistant.const import CONF_ACCESS_TOKEN, CONF_ADDRESS, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -26,6 +27,7 @@ from .const import (
     CONF_DEVICE_TYPE,
     CONF_PROTOCOL,
     DOMAIN,
+    SENSORS,
     UUID,
 )
 
@@ -152,14 +154,18 @@ class BoschFlowHandler(config_entries.ConfigFlow):
         self, device_type, session_type, host, access_token, password=None, session=None
     ):
         try:
-            BoschGateway = gateway_chooser(device_type)
-            device = BoschGateway(
-                session_type=session_type,
-                host=host,
-                access_token=access_token,
-                password=password,
-                session=session,
-            )
+            if password == "demo" or access_token == "demo":
+                from .mock_gateway import MockBoschGateway
+                device = MockBoschGateway(host=host)
+            else:
+                BoschGateway = gateway_chooser(device_type)
+                device = BoschGateway(
+                    session_type=session_type,
+                    host=host,
+                    access_token=access_token,
+                    password=password,
+                    session=session,
+                )
             try:
                 uuid = await device.check_connection()
             except (FirmwareException, UnknownDevice) as err:
@@ -168,23 +174,35 @@ class BoschFlowHandler(config_entries.ConfigFlow):
             if uuid:
                 await self.async_set_unique_id(uuid)
                 self._abort_if_unique_id_configured()
+        except AbortFlow:
+            raise
         except (DeviceException, EncryptionException) as err:
             _LOGGER.error("Wrong IP or credentials at %s - %s", host, err)
             return self.async_abort(reason="faulty_credentials")
         except Exception as err:  # pylint: disable=broad-except
             _LOGGER.error("Error connecting Bosch at %s - %s", host, err)
+            return self.async_abort(reason="unknown")
         else:
             _LOGGER.debug("Adding Bosch entry.")
+            data = {
+                CONF_ADDRESS: device.host,
+                UUID: uuid,
+                ACCESS_KEY: device.access_key,
+                ACCESS_TOKEN: device.access_token,
+                CONF_DEVICE_TYPE: self._choose_type,
+                CONF_PROTOCOL: session_type,
+            }
+            if access_token == "demo" or password == "demo":
+                from bosch_thermostat_client.const import HC, DHW, SC
+                enabled_sensors = [s.attr_id for s in device.sensors]
+                for circ_type in [HC, DHW, SC]:
+                    for circuit in device.get_circuits(circ_type):
+                        enabled_sensors.extend([s.attr_id for s in circuit.sensors])
+                data[SENSORS] = enabled_sensors
+
             return self.async_create_entry(
                 title=device.device_name or "Unknown model",
-                data={
-                    CONF_ADDRESS: device.host,
-                    UUID: uuid,
-                    ACCESS_KEY: device.access_key,
-                    ACCESS_TOKEN: device.access_token,
-                    CONF_DEVICE_TYPE: self._choose_type,
-                    CONF_PROTOCOL: session_type,
-                },
+                data=data,
             )
 
     async def async_step_discovery(self, discovery_info=None):
