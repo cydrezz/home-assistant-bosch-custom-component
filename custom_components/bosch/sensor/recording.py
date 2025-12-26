@@ -115,7 +115,10 @@ class RecordingSensor(StatisticHelper):
             _LOGGER.debug("No stats found. Exiting.")
             return
         stats_dict = {
-            dt_util.as_timestamp(stat["d"]): stat for stat in stats.values()
+            dt_util.as_timestamp(
+                stat["d"].replace(minute=0, second=0, microsecond=0)
+            ): stat
+            for stat in stats.values()
         }
         # get stats from HA database
         last_stats = await self.get_stats_from_ha_db(

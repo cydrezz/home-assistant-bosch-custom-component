@@ -56,9 +56,10 @@ class BoschBaseSensor(BoschEntity, SensorEntity):
             self._attr_device_class = self._bosch_object.device_class
         if self._bosch_object.state_class:
             self._attr_state_class = self._bosch_object.state_class
-            if (
+            if self._attr_state_class == "total" and (
                 self._attr_device_class == "temperature"
-                and self._attr_state_class == "total"
+                or getattr(self._bosch_object, "unit_of_measurement", None)
+                in ("%", "C", "°C", "F", "°F")
             ):
                 self._attr_state_class = "measurement"
         if attr_uri in ("startTime", "startDateTime"):
