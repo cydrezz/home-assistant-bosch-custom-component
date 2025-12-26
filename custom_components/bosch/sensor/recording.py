@@ -60,7 +60,7 @@ class RecordingSensor(StatisticHelper):
         """Old async update."""
         data = self._bosch_object.get_property(self._attr_uri)
         now = dt_util.now()
-        if not data and not data.get(VALUE):
+        if not data or not data.get(VALUE):
             return
 
         def get_last_full_hour() -> datetime:
