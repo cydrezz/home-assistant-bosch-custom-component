@@ -2,7 +2,7 @@
 //hass -c config
 {
   "name": "Bosch HA Dev",
-  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "image": "mcr.microsoft.com/devcontainers/python:3.13",
   "postCreateCommand": "sudo apt-get update && sudo apt-get install -y ffmpeg libpcap-dev iputils-ping && mkdir -p config/custom_components && test -f config/configuration.yaml || printf \"default_config:\\n\\nhttp:\\n  use_x_forwarded_for: true\\n  trusted_proxies:\\n    - 127.0.0.1\\n    - ::1\\n\" > config/configuration.yaml && rm -rf config/custom_components/bosch && ln -sf ${containerWorkspaceFolder}/custom_components/bosch config/custom_components/bosch && pip install --upgrade pip && if [ -f requirements.txt ]; then pip install -r requirements.txt; fi && if [ -f unittests/requirements.txt ]; then pip install -r unittests/requirements.txt; fi && pip install homeassistant colorlog \"josepy<1.15.0\" tzdata bosch-thermostat-client",
   "customizations": {
     "vscode": {
