@@ -39,5 +39,6 @@ async def test_switch_entity(hass):
         {"entity_id": "switch.test_switch"},
         blocking=True,
     )
+    await hass.async_block_till_done()
     state = hass.states.get("switch.test_switch")
     assert state.state == STATE_ON
