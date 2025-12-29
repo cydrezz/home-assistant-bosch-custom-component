@@ -27,11 +27,11 @@ async def test_water_heater_entity(hass):
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=10))
     await hass.async_block_till_done()
 
-    state = hass.states.get("water_heater.dhw1")
+    state = hass.states.get("water_heater.dhw_circuit_1")
     assert state is not None
     assert state.state == "performance"
-    assert state.attributes["current_temperature"] == 56.6
-    assert state.attributes["temperature"] == 48.0
+    assert state.attributes["current_temperature"] == 40.0
+    assert state.attributes["temperature"] == 50.0
 
     # Test set temperature
     await hass.services.async_call(

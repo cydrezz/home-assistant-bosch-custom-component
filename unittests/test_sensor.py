@@ -31,6 +31,7 @@ async def test_sensor_mock_values(hass):
     async_fire_time_changed(hass, dt_util.utcnow() + timedelta(seconds=10))
     await hass.async_block_till_done()
 
+    print(f"All states: {hass.states.async_all()}")
     # Check Actual Supply Temperature (Mock value: 27.8)
     state = hass.states.get("sensor.actual_supply_temp")
     assert state is not None
