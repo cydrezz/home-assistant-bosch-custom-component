@@ -1,5 +1,5 @@
 """Mock Gateway for Bosch Custom Component."""
-from bosch_thermostat_client.const import HC, DHW, SENSOR, SC, RECORDING, HVAC_HEAT, HVAC_OFF, VALUE, UNITS, NAME, REGULAR, BINARY
+from bosch_thermostat_client.const import HC, DHW, SENSOR, SC, RECORDING, HVAC_HEAT, VALUE, UNITS, NAME, REGULAR, BINARY
 from bosch_thermostat_client.const.ivt import INVALID
 from bosch_thermostat_client.const.easycontrol import DV
 from homeassistant.util import dt as dt_util

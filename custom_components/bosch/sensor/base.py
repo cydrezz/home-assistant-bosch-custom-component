@@ -6,7 +6,7 @@ from datetime import timedelta
 from bosch_thermostat_client.const import NAME, UNITS, VALUE
 from bosch_thermostat_client.const.ivt import INVALID
 from bosch_thermostat_client.sensors.sensor import Sensor as BoschSensor
-from homeassistant.const import EntityCategory, UnitOfTime
+from homeassistant.const import EntityCategory
 from homeassistant.components.sensor import SensorEntity, SensorDeviceClass
 from homeassistant.util import dt as dt_util
 

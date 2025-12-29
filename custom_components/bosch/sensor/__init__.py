@@ -8,10 +8,9 @@ from bosch_thermostat_client.const import (
     SENSORS,
 )
 from bosch_thermostat_client.const.easycontrol import ENERGY
-from homeassistant.helpers import entity_platform
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from ..const import CIRCUITS, DOMAIN, GATEWAY, SERVICE_MOVE_OLD_DATA, SIGNAL_BOSCH, UUID
+from ..const import CIRCUITS, DOMAIN, GATEWAY, SIGNAL_BOSCH, UUID
 from .bosch import BoschSensor
 from .circuit import CircuitSensor
 from .energy import EcusRecordingSensors, EnergySensor, EnergySensors
