@@ -154,18 +154,14 @@ class BoschFlowHandler(config_entries.ConfigFlow):
         self, device_type, session_type, host, access_token, password=None, session=None
     ):
         try:
-            if password == "demo" or access_token == "demo":
-                from .mock_gateway import MockBoschGateway
-                device = MockBoschGateway(host=host)
-            else:
-                BoschGateway = gateway_chooser(device_type)
-                device = BoschGateway(
-                    session_type=session_type,
-                    host=host,
-                    access_token=access_token,
-                    password=password,
-                    session=session,
-                )
+            BoschGateway = gateway_chooser(device_type)
+            device = BoschGateway(
+                session_type=session_type,
+                host=host,
+                access_token=access_token,
+                password=password,
+                session=session,
+            )
             try:
                 uuid = await device.check_connection()
             except (FirmwareException, UnknownDevice) as err:
@@ -192,14 +188,6 @@ class BoschFlowHandler(config_entries.ConfigFlow):
                 CONF_DEVICE_TYPE: self._choose_type,
                 CONF_PROTOCOL: session_type,
             }
-            if access_token == "demo" or password == "demo":
-                from bosch_thermostat_client.const import HC, DHW, SC
-                enabled_sensors = [s.attr_id for s in device.sensors]
-                for circ_type in [HC, DHW, SC]:
-                    for circuit in device.get_circuits(circ_type):
-                        enabled_sensors.extend([s.attr_id for s in circuit.sensors])
-                data[SENSORS] = enabled_sensors
-
             return self.async_create_entry(
                 title=device.device_name or "Unknown model",
                 data=data,

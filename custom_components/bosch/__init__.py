@@ -239,20 +239,16 @@ class BoschGatewayEntry:
 
         _LOGGER.debug("Initializing Bosch integration.")
         self._update_lock = asyncio.Lock()
-        if self._access_token == "demo":
-            from .mock_gateway import MockBoschGateway
-            self.gateway = MockBoschGateway(host=self._host)
-        else:
-            BoschGateway = bosch.gateway_chooser(device_type=self._device_type)
-            self.gateway = BoschGateway(
-                session=async_get_clientsession(self.hass, verify_ssl=False)
-                if self._protocol == HTTP
-                else None,
-                session_type=self._protocol,
-                host=self._host,
-                access_key=self._access_key,
-                access_token=self._access_token,
-            )
+        BoschGateway = bosch.gateway_chooser(device_type=self._device_type)
+        self.gateway = BoschGateway(
+            session=async_get_clientsession(self.hass, verify_ssl=False)
+            if self._protocol == HTTP
+            else None,
+            session_type=self._protocol,
+            host=self._host,
+            access_key=self._access_key,
+            access_token=self._access_token,
+        )
 
         async def close_connection(event) -> None:
             """Close connection with server."""
