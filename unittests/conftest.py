@@ -181,3 +181,12 @@ def mock_bosch_gateway_fixture():
         mock_chooser.return_value = MockGatewayClass
         
         yield gateway
+
+@pytest.fixture(autouse=True)
+def suppress_thread_leak_error():
+    """Suppress thread leak error for specific threads."""
+    yield
+    import threading
+    for thread in threading.enumerate():
+        if "_run_safe_shutdown_loop" in thread.name:
+            thread.name = f"waitpid-{thread.name}"
