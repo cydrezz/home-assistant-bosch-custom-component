@@ -27,7 +27,6 @@ from .const import (
     CONF_DEVICE_TYPE,
     CONF_PROTOCOL,
     DOMAIN,
-    SENSORS,
     UUID,
 )
 
