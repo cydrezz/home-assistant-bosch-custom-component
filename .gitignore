@@ -10,6 +10,12 @@ build/
 
 # Unit test / coverage reports
 .pytest_cache/
+.coverage
+htmlcov/
+coverage.xml
+
+# Linter
+.ruff_cache/
 
 # Home Assistant Local Dev
 config/
@@ -69,9 +75,9 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-.vscode
-.vscode/
+# VS Code
 .vscode/*
+!.vscode/settings.json
 
 # Data folder
 Daten/
