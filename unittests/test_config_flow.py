@@ -40,3 +40,4 @@ async def test_flow_demo_mode(hass):
     assert result["type"] == data_entry_flow.FlowResultType.CREATE_ENTRY
     assert result["title"] == "RC300"
     assert result["data"]["address"] == "demo"
+    await hass.async_block_till_done()
