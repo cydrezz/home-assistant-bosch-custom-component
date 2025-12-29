@@ -7,9 +7,12 @@ from datetime import datetime, timedelta
 from homeassistant.components.recorder.models import (
     StatisticData,
     StatisticMetaData,
-    StatisticMeanType,
     datetime_to_timestamp_or_none,
 )
+try:
+    from homeassistant.components.recorder.models import StatisticMeanType
+except ImportError:
+    StatisticMeanType = None
 from sqlalchemy.exc import IntegrityError
 from homeassistant.util import dt as dt_util
 
@@ -72,16 +75,18 @@ class StatisticHelper(BoschBaseSensor):
     @property
     def statistic_metadata(self) -> StatisticMetaData:
         """Statistic Metadata recorder model class."""
-        return StatisticMetaData(
-            has_mean=False,
-            mean_type=StatisticMeanType.NONE,
-            has_sum=True,
-            name=f"Stats {self._name}",
-            source=self._domain_name.lower(),
-            statistic_id=self.statistic_id,
-            unit_of_measurement=self._unit_of_measurement,
-            unit_class=None,
-        )
+        kwargs = {
+            "has_mean": False,
+            "has_sum": True,
+            "name": f"Stats {self._name}",
+            "source": self._domain_name.lower(),
+            "statistic_id": self.statistic_id,
+            "unit_of_measurement": self._unit_of_measurement,
+            "unit_class": None,
+        }
+        if StatisticMeanType:
+            kwargs["mean_type"] = StatisticMeanType.NONE
+        return StatisticMetaData(**kwargs)
 
     async def get_last_stat(self) -> dict[str, list[StatisticsRow]]:
         try:
