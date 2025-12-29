@@ -1,4 +1,19 @@
 """Test Bosch config flow."""
+import threading
+from unittest.mock import MagicMock
+
+# Patch threading.Thread to prevent slixmpp from starting its shutdown loop thread
+# This must be done before importing bosch_thermostat_client
+_original_thread_init = threading.Thread.__init__
+
+def _mock_thread_init(self, *args, **kwargs):
+    _original_thread_init(self, *args, **kwargs)
+    if "_run_safe_shutdown_loop" in self.name:
+        self.start = lambda: None  # Disable start method for this thread
+
+# Apply the patch
+threading.Thread.__init__ = _mock_thread_init
+
 from unittest.mock import patch
 from homeassistant import config_entries, data_entry_flow
 from custom_components.bosch.const import DOMAIN, CONF_PROTOCOL
