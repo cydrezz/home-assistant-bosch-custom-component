@@ -165,6 +165,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
     """Unload a config entry."""
     _LOGGER.debug("Removing entry.")
     uuid = entry.data[UUID]
+    if uuid not in hass.data[DOMAIN]:
+        async_remove_services(hass, entry)
+        return True
     data = hass.data[DOMAIN][uuid]
 
     def remove_entry(key):
