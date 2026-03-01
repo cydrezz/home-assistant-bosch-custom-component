@@ -24,6 +24,7 @@ home-assistant.log
 
 # Local Debug Scripts
 debug_connection.py
+create_admin.py
 
 # Flask stuff:
 instance/
