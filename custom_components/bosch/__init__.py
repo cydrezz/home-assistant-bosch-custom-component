@@ -379,12 +379,11 @@ class BoschGatewayEntry:
                     )
 
         def rounder(t):
-            matching_seconds = [0]
-            matching_minutes = [6]  # 6
-            matching_hours = dt_util.parse_time_expression("*", 0, 23)
-            return dt_util.find_next_time_expression_time(
-                t, matching_seconds, matching_minutes, matching_hours
-            )
+            # Calculate next occurrence of XX:06:00
+            next_time = t.replace(minute=6, second=0, microsecond=0)
+            if next_time < t:
+                next_time += timedelta(hours=1)
+            return next_time
 
         nexti = rounder(now + timedelta(seconds=1))
         self.hass.data[DOMAIN][self.uuid][
