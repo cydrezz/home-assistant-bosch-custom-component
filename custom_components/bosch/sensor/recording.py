@@ -61,6 +61,12 @@ class RecordingSensor(StatisticHelper):
         data = self._bosch_object.get_property(self._attr_uri)
         now = dt_util.now()
         if not data or not data.get(VALUE):
+            _LOGGER.debug(
+                "Recording %s: No data from bosch_object for uri %s. Raw data: %s",
+                self.unique_id,
+                self._attr_uri,
+                data,
+            )
             return
 
         def get_last_full_hour() -> datetime:
