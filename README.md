@@ -3,7 +3,9 @@
 > **Fork Information:** This repository is a fork based on version **0.28.2** of the original component. It includes fixes for Home Assistant 2025.12+ (Deprecation Warnings).
 
 HA custom component for Bosch thermostats.
-If you like this component consider sponsoring my work: [:heart: Sponsor](https://github.com/sponsors/pszafer)
+If you like this ha-pro fork consider sponsoring my work: [:heart: Sponsor](https://github.com/sponsors/cydrezz)
+
+This is a maintained fork of [pszafer's bosch-thermostat component](https://github.com/bosch-thermostat/home-assistant-bosch-custom-component) — consider [sponsoring the original author](https://github.com/sponsors/pszafer) too.
 
 **Second maintainer needed!**
 
