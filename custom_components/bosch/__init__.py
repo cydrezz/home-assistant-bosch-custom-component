@@ -300,9 +300,11 @@ class BoschGatewayEntry:
                 FIRMWARE_SCAN_INTERVAL,  # Firmware scan interval
             )
             async_call_later(self.hass, 1, self.thermostat_refresh)
-            asyncio.run_coroutine_threadsafe(self.recording_sensors_update(),
-                self.hass.loop
-            )
+            # hass.async_create_task instead of run_coroutine_threadsafe: we are
+            # already on the event loop here, and threadsafe-futures swallow
+            # exceptions - a failed first run would kill the hourly recording
+            # chain silently (frozen energy statistics).
+            self.hass.async_create_task(self.recording_sensors_update())
 
     async def async_init_bosch(self) -> bool:
         """Initialize Bosch gateway module."""
@@ -363,35 +365,47 @@ class BoschGatewayEntry:
         updated = False
         signals = []
         now = dt_util.now()
-        for entity in entities:
-            if entity.enabled:
-                try:
-                    _LOGGER.debug("Updating component 1-hour Sensor by %s", id(self))
-                    await entity.bosch_object.update(time=now)
-                    updated = True
-                    if entity.signal not in signals:
-                        signals.append(entity.signal)
-                except DeviceException as err:
-                    _LOGGER.warning(
-                        "Bosch object of entity %s is no longer available. %s",
-                        entity.name,
-                        err,
-                    )
+        try:
+            for entity in entities:
+                if entity.enabled:
+                    try:
+                        _LOGGER.debug("Updating component 1-hour Sensor by %s", id(self))
+                        await entity.bosch_object.update(time=now)
+                        updated = True
+                        if entity.signal not in signals:
+                            signals.append(entity.signal)
+                    except DeviceException as err:
+                        _LOGGER.warning(
+                            "Bosch object of entity %s is no longer available. %s",
+                            entity.name,
+                            err,
+                        )
+                    except Exception as err:
+                        # one failing entity (ClientError, TimeoutError, ...)
+                        # must not kill the update of the remaining entities
+                        _LOGGER.warning(
+                            "Unexpected error while updating recording entity %s: %s",
+                            entity.name,
+                            err,
+                        )
+        finally:
+            # rescheduling lives in finally: whatever went wrong above, the
+            # hourly chain must never die - a dead timer means frozen energy
+            # statistics until the integration is reloaded.
+            def rounder(t):
+                # Calculate next occurrence of XX:06:00
+                next_time = t.replace(minute=6, second=0, microsecond=0)
+                if next_time < t:
+                    next_time += timedelta(hours=1)
+                return next_time
 
-        def rounder(t):
-            # Calculate next occurrence of XX:06:00
-            next_time = t.replace(minute=6, second=0, microsecond=0)
-            if next_time < t:
-                next_time += timedelta(hours=1)
-            return next_time
-
-        nexti = rounder(now + timedelta(seconds=1))
-        self.hass.data[DOMAIN][self.uuid][
-            RECORDING_INTERVAL
-        ] = async_track_point_in_utc_time(
-            self.hass, self.recording_sensors_update, nexti
-        )
-        _LOGGER.debug("Next update of 1-hour sensors scheduled at: %s", nexti)
+            nexti = rounder(now + timedelta(seconds=1))
+            self.hass.data[DOMAIN][self.uuid][
+                RECORDING_INTERVAL
+            ] = async_track_point_in_utc_time(
+                self.hass, self.recording_sensors_update, nexti
+            )
+            _LOGGER.debug("Next update of 1-hour sensors scheduled at: %s", nexti)
         if updated:
             _LOGGER.debug("Bosch 1-hour entitites updated.")
             for signal in signals:
