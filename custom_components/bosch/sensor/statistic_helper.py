@@ -33,6 +33,15 @@ from .base import BoschBaseSensor
 _LOGGER = logging.getLogger(__name__)
 
 
+class StatisticsQueryError(Exception):
+    """Recorder DB query failed - callers must abort the statistics cycle.
+
+    Swallowing DB errors into {} made insert_statistics believe there were
+    never any statistics, triggering a 30-day re-import with a fresh sum
+    (duplicate/reset corruption in the long-term statistics).
+    """
+
+
 class StatisticHelper(BoschBaseSensor):
     """Statistic helper class."""
 
@@ -75,6 +84,14 @@ class StatisticHelper(BoschBaseSensor):
     @property
     def statistic_metadata(self) -> StatisticMetaData:
         """Statistic Metadata recorder model class."""
+        # unit_class map adopted from upstream 320853a (PR #540): required for
+        # proper unit conversion of long-term statistics (HA 2026.11 wants it)
+        unit_class = {
+            "kWh": "energy",
+            "Wh": "energy",
+            "kW": "power",
+            "W": "power",
+        }.get(self._unit_of_measurement)
         kwargs = {
             "has_mean": False,
             "has_sum": True,
@@ -82,7 +99,7 @@ class StatisticHelper(BoschBaseSensor):
             "source": self._domain_name.lower(),
             "statistic_id": self.statistic_id,
             "unit_of_measurement": self._unit_of_measurement,
-            "unit_class": None,
+            "unit_class": unit_class,
         }
         if StatisticMeanType:
             kwargs["mean_type"] = StatisticMeanType.NONE
@@ -99,8 +116,13 @@ class StatisticHelper(BoschBaseSensor):
                 {"state", "sum"},
             )
         except Exception as err:
-            _LOGGER.debug("Can't fetch last stats: %s", err)
-            return {}
+            _LOGGER.warning(
+                "Recorder query for last stats of %s failed - aborting this "
+                "statistics cycle instead of re-importing: %s",
+                self.statistic_id,
+                err,
+            )
+            raise StatisticsQueryError(str(err)) from err
 
     async def get_stats_from_ha_db(
         self, start_time: datetime, end_time: datetime
@@ -118,8 +140,13 @@ class StatisticHelper(BoschBaseSensor):
                 {"state", "sum"},
             )
         except Exception as err:
-            _LOGGER.debug("Can't fetch stats from DB: %s", err)
-            return {}
+            _LOGGER.warning(
+                "Recorder period query for %s failed - aborting this "
+                "statistics cycle instead of re-importing: %s",
+                self.statistic_id,
+                err,
+            )
+            raise StatisticsQueryError(str(err)) from err
 
     def add_external_stats(self, stats: list[StatisticData]) -> None:
         """Add external statistics."""
@@ -152,7 +179,10 @@ class StatisticHelper(BoschBaseSensor):
         start = dt_util.start_of_local_day(start_time)
         stop = start + timedelta(hours=24)  # fetch one day only from API
         async with self._statistic_import_lock:
-            await self._upsert_past_statistics(start=start, stop=stop)
+            try:
+                await self._upsert_past_statistics(start=start, stop=stop)
+            except StatisticsQueryError:
+                return
 
     async def fetch_past_data(
         self, start_time: datetime, stop_time: datetime

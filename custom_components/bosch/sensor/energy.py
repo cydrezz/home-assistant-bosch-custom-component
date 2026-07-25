@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from datetime import timedelta, datetime
 from bosch_thermostat_client.const import UNITS
-from .statistic_helper import StatisticHelper
+from .statistic_helper import StatisticHelper, StatisticsQueryError
 from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
 from homeassistant.const import (
     UnitOfEnergy,
@@ -125,7 +125,12 @@ class EnergySensor(StatisticHelper):
             self._unit_of_measurement == UnitOfEnergy.KILO_WATT_HOUR
             or self._unit_of_measurement == UnitOfVolume.CUBIC_METERS
         ):
-            await self._insert_statistics()
+            try:
+                await self._insert_statistics()
+            except StatisticsQueryError:
+                # DB query failed - retry next cycle instead of
+                # re-importing 30 days with a fresh sum
+                return
         else:
             if self._normalize:
                 self._state = self._normalize(value.get(self._attr_read_key))

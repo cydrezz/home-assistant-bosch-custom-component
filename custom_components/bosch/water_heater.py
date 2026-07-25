@@ -8,8 +8,6 @@ import logging
 
 from bosch_thermostat_client.const import GATEWAY, SETPOINT
 from homeassistant.components.water_heater import (
-    ATTR_TARGET_TEMP_HIGH,
-    ATTR_TARGET_TEMP_LOW,
     STATE_OFF,
     WaterHeaterEntity,
     WaterHeaterEntityFeature,
@@ -46,7 +44,7 @@ async def async_setup_entry(hass, config_entry, async_add_entities) -> bool:
     ]
     async_add_entities(data[WATER_HEATER])
     async_dispatcher_send(hass, SIGNAL_BOSCH)
-    platform = entity_platform.current_platform.get()
+    platform = entity_platform.async_get_current_platform()
     platform.async_register_entity_service(
         SERVICE_CHARGE_START, SERVICE_CHARGE_SCHEMA, "service_charge"
     )
@@ -83,20 +81,17 @@ class BoschWaterHeater(BoschClimateWaterEntity, WaterHeaterEntity):
         await self._bosch_object.set_service_call(CHARGE, value)
 
     @property
-    def state_attributes(self):
-        data = super().state_attributes
-        data.pop(ATTR_TARGET_TEMP_HIGH, None)
-        data.pop(ATTR_TARGET_TEMP_LOW, None)
+    def extra_state_attributes(self):
+        """Return the optional device state attributes.
+
+        No state_attributes override anymore (deprecated in HA) - the custom
+        keys live here, like the climate platform already does.
+        """
+        data = {"target_temp_step": 1}
         data[SETPOINT] = self._bosch_object.setpoint
         if self._bosch_object.schedule:
             data[SWITCHPOINT] = self._bosch_object.schedule.active_program
         data[BOSCH_STATE] = self._state
-        return data
-
-    @property
-    def extra_state_attributes(self):
-        """Return the optional device state attributes."""
-        data = {"target_temp_step": 1}
         return data
 
     @property
@@ -127,12 +122,17 @@ class BoschWaterHeater(BoschClimateWaterEntity, WaterHeaterEntity):
         )
 
     async def async_set_temperature(self, **kwargs):
-        """Set new target temperature."""
+        """Set new target temperature.
+
+        Upstream 320853a: setting the SAME temperature again is a no-op,
+        not an error - only a missing temperature is worth complaining about.
+        """
         target_temp = kwargs.get(ATTR_TEMPERATURE)
-        if target_temp and target_temp != self._target_temperature:
-            await self._bosch_object.set_temperature(target_temp)
-        else:
+        if not target_temp:
             _LOGGER.error("A target temperature must be provided")
+            return
+        if target_temp != self._target_temperature:
+            await self._bosch_object.set_temperature(target_temp)
 
     async def async_set_operation_mode(self, operation_mode):
         """Set operation mode."""

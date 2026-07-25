@@ -3,7 +3,7 @@
 from __future__ import annotations
 from datetime import timedelta, datetime
 import logging
-from .statistic_helper import StatisticHelper
+from .statistic_helper import StatisticHelper, StatisticsQueryError
 
 from ..const import SIGNAL_RECORDING_UPDATE_BOSCH, UNITS_CONVERTER, VALUE
 from homeassistant.components.recorder.models import (
@@ -126,7 +126,12 @@ class RecordingSensor(StatisticHelper):
                 self.statistic_id,
             )
             async with self._statistic_import_lock:
-                await self._insert_statistics()
+                try:
+                    await self._insert_statistics()
+                except StatisticsQueryError:
+                    # DB query failed - retry next hour instead of
+                    # re-importing 30 days with a fresh sum
+                    return
         else:
             _LOGGER.debug("Old gather data algorithm.")
             await self.async_old_gather_update()
