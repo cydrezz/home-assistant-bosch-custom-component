@@ -144,7 +144,9 @@ def async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
             return
         _path = service_call.data.get("path")
         _value = service_call.data.get(VALUE)
-        if not _path or not _value:
+        if not _path or _value is None:
+            # explicit None check: 0 / 0.0 / "" are legitimate PUT values
+            # (e.g. resetting a saturated energy counter to 0)
             _LOGGER.error("Path or value not defined.")
             return
         data = []
