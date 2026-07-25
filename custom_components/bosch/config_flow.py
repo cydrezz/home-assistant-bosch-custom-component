@@ -14,10 +14,9 @@ from bosch_thermostat_client.exceptions import (
     UnknownDevice,
 )
 from homeassistant import config_entries
+from homeassistant.const import CONF_ACCESS_TOKEN, CONF_ADDRESS, CONF_PASSWORD
 from homeassistant.core import callback
 from homeassistant.data_entry_flow import AbortFlow
-
-from homeassistant.const import CONF_ACCESS_TOKEN, CONF_ADDRESS, CONF_PASSWORD
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from . import create_notification_firmware
@@ -174,7 +173,7 @@ class BoschFlowHandler(config_entries.ConfigFlow):
         except (DeviceException, EncryptionException) as err:
             _LOGGER.error("Wrong IP or credentials at %s - %s", host, err)
             return self.async_abort(reason="faulty_credentials")
-        except Exception as err:  # pylint: disable=broad-except
+        except Exception as err:  # noqa: BLE001  # pylint: disable=broad-except
             _LOGGER.error("Error connecting Bosch at %s - %s", host, err)
             return self.async_abort(reason="unknown")
         else:

@@ -1,33 +1,37 @@
 """Bosch statistic helper for Recording/Energy sensor."""
 
 from __future__ import annotations
-import logging
+
 import asyncio
+import logging
 from datetime import datetime, timedelta
+
 from homeassistant.components.recorder.models import (
     StatisticData,
     StatisticMetaData,
     datetime_to_timestamp_or_none,
 )
+
 try:
     from homeassistant.components.recorder.models import StatisticMeanType
 except ImportError:
     StatisticMeanType = None
-from sqlalchemy.exc import IntegrityError
 from homeassistant.util import dt as dt_util
+from sqlalchemy.exc import IntegrityError
 
 try:
     from homeassistant.components.recorder.db_schema import StatisticsMeta
 except ImportError:
     from homeassistant.components.recorder.models import StatisticsMeta
-from homeassistant.components.recorder.util import session_scope
+from homeassistant.components.recorder import get_instance
 from homeassistant.components.recorder.statistics import (
+    StatisticsRow,
     async_add_external_statistics,
     get_last_statistics,
     statistics_during_period,
-    StatisticsRow,
 )
-from homeassistant.components.recorder import get_instance
+from homeassistant.components.recorder.util import session_scope
+
 from .base import BoschBaseSensor
 
 _LOGGER = logging.getLogger(__name__)
@@ -163,9 +167,10 @@ class StatisticHelper(BoschBaseSensor):
         closest_stat = None
         for stat in last_stats[self.statistic_id]:
             tstmp = stat.get("start")
-            if tstmp < day_stamp:
-                if closest_stat is None or tstmp > closest_stat.get("start"):
-                    closest_stat = stat
+            if tstmp < day_stamp and (
+                closest_stat is None or tstmp > closest_stat.get("start")
+            ):
+                closest_stat = stat
         if not closest_stat:
             closest_stat = last_stats[self.statistic_id][-1]
             _LOGGER.debug("Closest stat not found, use last one from array!")

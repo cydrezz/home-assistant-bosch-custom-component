@@ -1,24 +1,25 @@
 """Bosch sensor for Energy URI in Easycontrol."""
 from __future__ import annotations
+
 import logging
-from datetime import timedelta, datetime
+from datetime import datetime, timedelta
+
 from bosch_thermostat_client.const import UNITS
-from .statistic_helper import StatisticHelper, StatisticsQueryError
-from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
-from homeassistant.const import (
-    UnitOfEnergy,
-    UnitOfTemperature,
-    UnitOfVolume,
-    STATE_UNAVAILABLE,
-)
-from homeassistant.util import dt as dt_util
 from homeassistant.components.recorder.models import (
     StatisticData,
     timestamp_to_datetime_or_none,
 )
-
+from homeassistant.components.sensor import SensorDeviceClass, SensorStateClass
+from homeassistant.const import (
+    STATE_UNAVAILABLE,
+    UnitOfEnergy,
+    UnitOfTemperature,
+    UnitOfVolume,
+)
+from homeassistant.util import dt as dt_util
 
 from ..const import SIGNAL_ENERGY_UPDATE_BOSCH, VALUE
+from .statistic_helper import StatisticHelper, StatisticsQueryError
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -216,7 +217,7 @@ class EnergySensor(StatisticHelper):
         statistics_to_push = []
         start_of_day = dt_util.start_of_local_day()
         for stat in stats:
-            day_dt: datetime = datetime.strptime(stat["d"], "%d-%m-%Y")
+            day_dt: datetime = datetime.strptime(stat["d"], "%d-%m-%Y")  # noqa: DTZ007 - pure date, tz applied via start_of_local_day
             _date = start_of_day.replace(
                 year=day_dt.year, month=day_dt.month, day=day_dt.day
             )
@@ -306,7 +307,7 @@ class EnergySensor(StatisticHelper):
                         row
                         for row in bosch_data.values()
                         if dt_util.start_of_local_day(
-                            datetime.strptime(row["d"], "%d-%m-%Y")
+                            datetime.strptime(row["d"], "%d-%m-%Y")  # noqa: DTZ007 - pure date, tz applied by caller
                         )
                         > start_time
                     ],

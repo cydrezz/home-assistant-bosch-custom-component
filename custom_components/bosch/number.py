@@ -63,7 +63,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the Bosch Thermostat Platform."""
-    pass
 
 
 class BoschNumber(BoschEntity, NumberEntity):
@@ -143,7 +142,6 @@ class BoschNumber(BoschEntity, NumberEntity):
 
     async def async_update(self):
         """Update state of device."""
-        pass
 
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""

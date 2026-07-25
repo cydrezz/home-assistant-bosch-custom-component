@@ -89,14 +89,10 @@ class BoschBinarySensor(BoschEntity, BinarySensorEntity):
         _LOGGER.debug("Update of binary sensor %s called.", self.unique_id)
 
         def get_on_attr():
-            if self._bosch_object.state.lower() == ON:
-                return True
-            elif (
+            return self._bosch_object.state.lower() == ON or (
                 self._bosch_object.get_value(USED, "true").lower() == "true"
                 and self._bosch_object.state.lower() == USED
-            ):
-                return True
-            return False
+            )
 
         self._attr_is_on = get_on_attr()
 

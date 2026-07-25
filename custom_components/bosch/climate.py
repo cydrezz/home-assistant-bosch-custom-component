@@ -1,13 +1,14 @@
 """Support for Bosch Thermostat Climate."""
 from __future__ import annotations
+
 import logging
 from typing import Any
 
 from bosch_thermostat_client.const import HVAC_HEAT, HVAC_OFF, SETPOINT
 from homeassistant.components.climate import ClimateEntity
 from homeassistant.components.climate.const import (
-    HVACAction,
     ClimateEntityFeature,
+    HVACAction,
     HVACMode,
 )
 from homeassistant.const import ATTR_TEMPERATURE

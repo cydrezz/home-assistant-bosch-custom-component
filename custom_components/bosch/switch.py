@@ -68,7 +68,6 @@ async def async_setup_entry(hass, config_entry, async_add_entities):
 
 async def async_setup_platform(hass, config, async_add_entities, discovery_info=None):
     """Set up the Bosch Thermostat Platform."""
-    pass
 
 
 class BoschBaseSwitch(BoschEntity, SwitchEntity):

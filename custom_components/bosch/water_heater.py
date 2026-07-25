@@ -4,6 +4,7 @@ Support for water heaters connected to Bosch thermostat.
 For more details about this platform, please refer to the documentation at...
 """
 from __future__ import annotations
+
 import logging
 
 from bosch_thermostat_client.const import GATEWAY, SETPOINT
@@ -138,9 +139,7 @@ class BoschWaterHeater(BoschClimateWaterEntity, WaterHeaterEntity):
         """Set operation mode."""
         _LOGGER.debug(f"Setting operation mode of {self._name} to {operation_mode}.")
         status = await self.bosch_object.set_ha_mode(operation_mode)
-        if status > 0:
-            return True
-        return False
+        return status > 0
 
     async def async_update(self):
         """Get the latest date."""

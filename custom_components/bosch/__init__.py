@@ -380,9 +380,9 @@ class BoschGatewayEntry:
                             entity.name,
                             err,
                         )
-                    except Exception as err:
-                        # one failing entity (ClientError, TimeoutError, ...)
-                        # must not kill the update of the remaining entities
+                    except Exception as err:  # noqa: BLE001
+                        # deliberately broad: one failing entity (ClientError,
+                        # TimeoutError, ...) must not kill the remaining entities
                         _LOGGER.warning(
                             "Unexpected error while updating recording entity %s: %s",
                             entity.name,
