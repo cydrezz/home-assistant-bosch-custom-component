@@ -43,16 +43,12 @@ def find_gateway_entry(hass: HomeAssistant, devices_id: str) -> list[ConfigEntry
     for target in devices_id:
         device = registry.async_get(target)
         if device:
-            device_entries = list[ConfigEntry]()
             for entry_id in device.config_entries:
                 entry = hass.config_entries.async_get_entry(entry_id)
                 if entry and entry.domain == DOMAIN and entry not in config_entries:
-                    device_entries.append(entry)
-                if not device_entries:
-                    continue
-                config_entries.extend(device_entries)
+                    config_entries.append(entry)
         else:
-            _LOGGER.warn(
+            _LOGGER.warning(
                 f"Device '{target}' not found in device registry"
             )
     bosch_gateway_entries = []
@@ -106,8 +102,8 @@ def async_register_services(hass: HomeAssistant, entry: ConfigEntry) -> None:
             return
         for _gateway_entry in _gateway_entries:
             await _gateway_entry.thermostat_refresh()
-        _LOGGER.debug("Performing sensor update on service request. UUID: %s", _gateway_entry.uuid)
-        await _gateway_entry.recording_sensors_update()
+            _LOGGER.debug("Performing sensor update on service request. UUID: %s", _gateway_entry.uuid)
+            await _gateway_entry.recording_sensors_update()
 
     async def async_handle_recording_sensor_fetch_past(service_call: ServiceCall):
         """Fetch past recording sensor data manually."""
@@ -202,3 +198,8 @@ def async_remove_services(hass: HomeAssistant, config_entry: ConfigEntry) -> Non
     """Remove services."""
     hass.services.async_remove(DOMAIN, SERVICE_DEBUG)
     hass.services.async_remove(DOMAIN, SERVICE_UPDATE)
+    hass.services.async_remove(DOMAIN, RECORDING_SERVICE_UPDATE)
+    hass.services.async_remove(DOMAIN, SERVICE_GET)
+    hass.services.async_remove(DOMAIN, SERVICE_PUT_STRING)
+    hass.services.async_remove(DOMAIN, SERVICE_PUT_FLOAT)
+    hass.services.async_remove(DOMAIN, "fetch_recordings_sensor_range")
