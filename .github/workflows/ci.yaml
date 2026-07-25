@@ -26,7 +26,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install ruff
+          # Ruff bewusst gepinnt: eine neue Ruff-Version bringt neue Regeln mit
+          # und faerbt die CI rot, ohne dass sich eine Zeile Code geaendert hat
+          # (genau das ist am 25.07.2026 passiert). Hochziehen ist eine bewusste
+          # Entscheidung, kein Zufall aus dem Release-Kalender.
+          pip install ruff==0.16.0
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f unittests/requirements.txt ]; then pip install -r unittests/requirements.txt; fi
           # Install dependencies manually that might be missing in requirements
