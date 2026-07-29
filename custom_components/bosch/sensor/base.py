@@ -123,8 +123,19 @@ class BoschBaseSensor(BoschEntity, SensorEntity):
             else:
                 self._state = _state
                 if self._attr_uri == "energyConsumption":
-                    # Device reports in kJ, convert to kWh (1 kWh = 3600 kJ)
-                    self._state = round(float(self._state) / 3600, 2)
+                    # ha-pro: raw value is J, not kJ - measured 2026-07-25..29
+                    # on ONE WLW196-11 via nsc_icom_gateway after a counter
+                    # reset: the counter grew a constant ~7.3 units/s even
+                    # with the compressor idle (7.3 W standby electronics;
+                    # kJ would mean 7.3 kW continuous draw) and missed ~4 kWh
+                    # of real compressor consumption entirely (counter
+                    # +2.53 MJ vs 14.4 MJ actual). Note the counter therefore
+                    # tracks controller standby, not total consumption.
+                    # The /3600 ("kJ") divisor was this fork's own earlier
+                    # guess (upstream does no conversion); it overstated
+                    # the value by x1000. Other device families with this
+                    # URI are unverified - measure before generalizing.
+                    self._state = round(float(self._state) / 3_600_000, 3)
                 if self._attr_uri in ("systemUptime", "totalSystem"):
                     try:
                         self._state = str(timedelta(seconds=int(self._state)))
